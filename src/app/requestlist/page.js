@@ -102,7 +102,7 @@ export default function RequestList() {
                                     </td>
                                     <td className="p-4 border-b border-blue-gray-50">
                                         <Typography variant="small" className={`font-normal px-2 py-1 rounded-md 
-                                                ${status === "Approved" ? "text-green-600 bg-green-100"
+                                                ${status === "Approved" ? "text-green-600 bg-green-100 px-2"
                                                 : status === "Under Review" ? "text-amber-600 bg-amber-100"
                                                 : status === "Request" ? "text-gray-600 bg-gray-100"
                                                     : "text-red-600 bg-red-100"

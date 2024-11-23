@@ -23,10 +23,11 @@ export async function GET(req) {
         await connectMongoDB();
 
         // Retrieve all policy documents
-        const policies = await Policy.find({});
+        const policies = await Policy.findOne({});
 
         // Respond with the retrieved policies
         return NextResponse.json({ data: policies }, { status: 200 });
+        
     } catch (error) {
         console.error("Error retrieving policies:", error);
 
