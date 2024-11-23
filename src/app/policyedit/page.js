@@ -67,7 +67,7 @@ export default function PolicyEdit() {
             <p className="text-5xl font-bold mx-16 my-5">Terms and Policies</p>
 
             {/* Details box */}
-            <div className="bg-white mx-16 my-8 py-8 text-black text-x1 rounded font-normal">
+            <div className="bg-white mx-16 my-8 py-8 text-black text-x1 rounded-lg font-normal">
 
                 <form onSubmit={handleEdit}>
                     {/* Subtitle */}
@@ -102,7 +102,7 @@ export default function PolicyEdit() {
                                         value={memory}
                                         onChange={(e) => setMemory(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose maximum memory (RAM)</option>
+                                        <option value="" disabled>Choose maximum memory (RAM)</option>
                                         <option value="32GB">32 GB</option>
                                     </select>
                                     <textarea
@@ -133,7 +133,7 @@ export default function PolicyEdit() {
                                         value={hdd}
                                         onChange={(e) => setHDD(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose maximum HDD</option>
+                                        <option value="" disabled>Choose maximum HDD</option>
                                         <option value="1TB">1 TB</option>
                                     </select>
                                     <textarea
@@ -158,12 +158,12 @@ export default function PolicyEdit() {
                                     </label>
                                 </div>
                                 <div className="flex flex-col mx-20 mt-2 w-full text-lg font-normal">
-                                    <select
+                                    <select 
                                         id="ssd"
                                         value={ssd}
                                         onChange={(e) => setSSD(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose maximum SSD</option>
+                                        <option value="" disabled>Choose maximum SSD</option>
                                         <option value="500GB">500 GB</option>
                                     </select>
                                     <textarea
@@ -193,7 +193,7 @@ export default function PolicyEdit() {
                                         value={cpu}
                                         onChange={(e) => setCPU(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose maximum CPU Cors</option>
+                                        <option value="" disabled>Choose maximum CPU Cors</option>
                                         <option value="16CPU">16 CPU</option>
                                     </select>
                                     <textarea
@@ -218,12 +218,12 @@ export default function PolicyEdit() {
                                     </label>
                                 </div>
                                 <div className="flex flex-col mx-20 mt-2 w-full text-lg font-normal">
-                                    <select
+                                    <select 
                                         id="netBand"
                                         value={netBand}
                                         onChange={(e) => setNetBand(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose maximum network bandwidth</option>
+                                        <option value="" disabled>Choose maximum network bandwidth</option>
                                         <option value="1Gbps">1 Gbps</option>
                                     </select>
                                     <textarea
@@ -248,12 +248,12 @@ export default function PolicyEdit() {
                                     </label>
                                 </div>
                                 <div className="flex flex-col mx-20 mt-2 w-full text-lg font-normal">
-                                    <select
+                                    <select 
                                         id="env"
                                         value={env}
                                         onChange={(e) => setEnv(e.target.value)}
                                         className="w-1/3 bg-gray-50 border">
-                                        <option selected>Choose environment limits</option>
+                                        <option value="" disabled>Choose environment limits</option>
                                         <option value="5env">5 environments</option>
                                     </select>
                                     <textarea
