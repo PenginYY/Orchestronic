@@ -27,62 +27,82 @@ export default function Projectlist() {
 
         const projectResult = await res.json();
         console.log("Fetched projects:", projectResult);
-        const projectId = projectResult[0]?._id;
-        console.log("Project ID:", projectId);
-        try {
-          const res1 = await fetch(`/api/request?projectid=${projectId}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
 
-          const requestResult = await res1.json();
-          // console.log("Fetched requests:", requestResult);
-
-          if (requestResult.length > 0 && projectResult.length > 0) {
-            setProjects(projectResult);
-          } else if (requestResult.length === 0 && projectResult.length > 0) {
-            try {
-              const deleteRes = await fetch(
-                `/api/project?projectId=${projectId}`,
-                {
-                  method: "DELETE",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-
-              const deleteRes1 = await fetch(
-                `/api/resource?requestId=${projectId}`,
-                {
-                  method: "DELETE",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-
-              if (deleteRes.ok && deleteRes1.ok) {
-                console.log("Deleted successfully");
-                setProjects([]); // ✅ This will only run once
-              }
-            } catch (error) {
-              console.error("Error fetching requests:", error);
-            }
-          } else {
-            console.log("No projects found");
-          }
-        } catch (error) {
-          console.error("Error fetching requests:", error);
+        if (projectResult.length === 0) {
+          console.log("No projects found");
+          return;
         }
+
+        let filteredProjects = [];
+
+        for (const project of projectResult) {
+          const projectId = project._id;
+
+          try {
+            const res1 = await fetch(`/api/request?projectid=${projectId}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+
+            const requestResult = await res1.json();
+            console.log(
+              `Requests for project ${project.projectName}:`,
+              requestResult
+            );
+
+            if (requestResult.length > 0) {
+              filteredProjects.push(project); // Keep project if it has requests
+            } else {
+              // Delete Project and its resources if no request found
+              try {
+                const deleteProject = await fetch(
+                  `/api/project?projectId=${projectId}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+
+                const deleteResource = await fetch(
+                  `/api/resource?requestId=${projectId}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+
+                if (deleteProject.ok && deleteResource.ok) {
+                  console.log(`Deleted project: ${project.projectName}`);
+                }
+              } catch (deleteError) {
+                console.error(
+                  `Error deleting project ${project.projectName}:`,
+                  deleteError
+                );
+              }
+            }
+          } catch (requestError) {
+            console.error(
+              `Error fetching requests for project ${project.projectName}:`,
+              requestError
+            );
+          }
+        }
+
+        setProjects(filteredProjects); // ✅ Only set remaining projects
       } catch (error) {
-        console.error("Error fetching project:", error);
+        console.error("Error fetching projects:", error);
       } finally {
-        setLoading(false); // Set loading to false when fetch completes
+        setLoading(false);
       }
     };
+
     fetchProject();
   }, [userId]);
 
@@ -204,7 +224,10 @@ export default function Projectlist() {
                     </p>
                   </div>
                   <Link
-                    href={{ pathname: `/project`, query: { projectId: project._id }}}
+                    href={{
+                      pathname: `/project`,
+                      query: { projectId: project._id },
+                    }}
                     className="mt-4 inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
                     aria-label="View project details"
                   >

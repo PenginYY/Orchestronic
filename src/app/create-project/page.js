@@ -60,6 +60,7 @@ export default function CreateProject() {
     }
 
     const gitlabToken = user.externalAccounts?.[0]?.providerUserId;
+    // console.log(gitlabToken);
 
     if (!gitlabToken) {
       console.log("GitLab token is missing.");

@@ -19,6 +19,7 @@ export default function CloudResources({ params }) {
   const [allocation, setAllocation] = useState("");
   const [alert, setAlert] = useState("");
   const [availableVM, setAvailableVM] = useState([]);
+  const [warning, setWarning] = useState("");
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [pathWithNamespace, setPathWithNamespace] = useState("");
@@ -247,10 +248,117 @@ export default function CloudResources({ params }) {
     },
   ];
 
+  const [usernameWarning, setUsernameWarning] = useState("");
+  const [passwordWarning, setPasswordWarning] = useState("");
+
+  const disallowedUsernames = [
+    "administrator",
+    "admin",
+    "user",
+    "user1",
+    "test",
+    "user2",
+    "test1",
+    "user3",
+    "admin1",
+    "1",
+    "123",
+    "a",
+    "actuser",
+    "adm",
+    "admin2",
+    "aspnet",
+    "backup",
+    "console",
+    "david",
+    "guest",
+    "john",
+    "owner",
+    "root",
+    "server",
+    "sql",
+    "support",
+    "support_388945a0",
+    "sys",
+    "test2",
+    "test3",
+    "user4",
+    "user5",
+  ];
+
+  const disallowedPasswords = [
+    "abc@123",
+    "P@$$w0rd",
+    "P@ssw0rd",
+    "P@ssword123",
+    "Pa$$word",
+    "pass@word1",
+    "Password!",
+    "Password1",
+    "Password22",
+    "iloveyou!",
+  ];
+
+  const validateUsername = (username) => {
+    if (username.length < 1) return "Username must be at least 1 character.";
+    if (username.length > 64) return "Username cannot exceed 64 characters.";
+    if (disallowedUsernames.includes(username.toLowerCase()))
+      return "This username is not allowed.";
+    if (username.endsWith("."))
+      return "Windows username cannot end with a dot.";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    const lower = /[a-z]/;
+    const upper = /[A-Z]/;
+    const digit = /\d/;
+    const special = /[\W_]/;
+
+    let complexityCount = 0;
+    if (lower.test(password)) complexityCount++;
+    if (upper.test(password)) complexityCount++;
+    if (digit.test(password)) complexityCount++;
+    if (special.test(password)) complexityCount++;
+
+    if (password.length < 6) return "Password must be at least 6 characters.";
+    if (password.length > 72) return "Password cannot exceed 72 characters.";
+    if (disallowedPasswords.includes(password))
+      return "This password is not allowed.";
+    if (complexityCount < 3) {
+      return "Password must have at least 3 of: Uppercase, Lowercase, Digit, Special Character";
+    }
+    return "";
+  };
+
+  const handleUsernameChange = (e) => {
+    const username = e.target.value;
+    setAdminUser(username);
+    const warning = validateUsername(username);
+    setUsernameWarning(warning);
+  };
+
+  const handlePasswordChange = (e) => {
+    const password = e.target.value;
+    setAdminPassword(password);
+    const warning = validatePassword(password);
+    setPasswordWarning(warning);
+  };
+
   const handleSave = async () => {
     setAlert("");
-    if (!resourceName || !adminUser || !adminPassword || !allocation) {
-      setAlert("Please fill out the request form");
+
+    // Ensure all required fields are filled
+    if (
+      !resourceName ||
+      !adminUser ||
+      !adminPassword ||
+      !allocation ||
+      !vmSize ||
+      !userID ||
+      !projectID
+    ) {
+      setAlert("Please fill out all required fields");
       return;
     }
 
@@ -274,13 +382,17 @@ export default function CloudResources({ params }) {
         }),
       });
 
+      const data = await res.json();
+      console.log(data);
+
       if (!res.ok) {
-        throw new Error(`Failed to save: ${res.statusText}`);
-      } else {
-        router.push("/requestresource");
+        throw new Error(data.message || `Failed to save: ${res.statusText}`);
       }
+
+      router.push("/requestresource");
     } catch (error) {
-      console.log("Error while saving resource:", error);
+      setAlert(error.message || "An error occurred while saving the resource.");
+      console.error("Error while saving resource:", error);
     }
   };
 
@@ -526,7 +638,6 @@ export default function CloudResources({ params }) {
               id="vmSize"
               name="vmSize"
               className="border border-slate-300 rounded w-full px-4 py-2 text-base"
-              defaultValue="Standard_A1_v2"
               onChange={(e) => setVMSize(e.target.value)}
             >
               <option value="" disabled>
@@ -567,13 +678,17 @@ export default function CloudResources({ params }) {
               name="adminUsername"
               className="border border-slate-300 rounded w-full px-4 py-2 text-base"
               placeholder="Enter username"
-              defaultValue="Admin"
-              onChange={(e) => setAdminUser(e.target.value)}
+              onChange={handleUsernameChange}
             />
+            {usernameWarning && (
+              <span className="text-red-500 text-sm mt-2 block">
+                {usernameWarning}
+              </span>
+            )}
           </div>
 
           {/* Admin Password */}
-          <div>
+          <div className="mt-4">
             <label htmlFor="adminPassword" className="font-medium block mb-2">
               Admin Password
             </label>
@@ -583,8 +698,13 @@ export default function CloudResources({ params }) {
               name="adminPassword"
               className="border border-slate-300 rounded w-full px-4 py-2 text-base"
               placeholder="Enter password"
-              onChange={(e) => setAdminPassword(e.target.value)}
+              onChange={handlePasswordChange}
             />
+            {passwordWarning && (
+              <span className="text-red-500 text-sm mt-2 block">
+                {passwordWarning}
+              </span>
+            )}
           </div>
 
           {/* Network Interface

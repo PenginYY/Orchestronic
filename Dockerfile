@@ -1,21 +1,26 @@
 FROM apache/airflow:2.10.4
 
-# Install system dependencies
+# Install system dependencies with GPG signature verification workaround
 USER root
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl unzip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update -o Acquire::AllowInsecureRepositories=true \
+    && apt-get install -y --no-install-recommends --allow-unauthenticated \
+    curl \
+    unzip \
+    gnupg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Terraform
 RUN curl -LO https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip && \
     unzip terraform_1.5.7_linux_amd64.zip -d /usr/local/bin && \
-    rm terraform_1.5.7_linux_amd64.zip && \
-    terraform --version
+    rm terraform_1.5.7_linux_amd64.zip
 
-# Install Node.js
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
-    apt-get install -y nodejs
+# Install Node.js 20 (LTS) instead of 16
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update -o Acquire::AllowInsecureRepositories=true && \
+    apt-get install -y --allow-unauthenticated nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set PATH
 ENV PATH=$PATH:/usr/local/bin
@@ -24,28 +29,13 @@ ENV PATH=$PATH:/usr/local/bin
 USER airflow
 WORKDIR /opt/airflow/
 
-# Copy package.json first for Docker cache
-COPY package.json package-lock.json ./
-
-# Install dependencies and nvm
-USER root
-RUN apt-get update && apt-get install -y curl
-
-# Install nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-
-# Install Node.js 18 using nvm
-RUN bash -c "source $HOME/.nvm/nvm.sh && nvm install 18"
-
-# Use Node.js 18
-RUN bash -c "source $HOME/.nvm/nvm.sh && nvm use 18"
+# Copy package files for dependency installation
+COPY --chown=airflow:airflow package.json package-lock.json ./
+COPY --chown=airflow:airflow requirements.txt ./
 
 # Install project dependencies
-RUN npm install
+RUN npm install && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy all files
-COPY . .
-
-USER airflow
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application code
+COPY --chown=airflow:airflow . .

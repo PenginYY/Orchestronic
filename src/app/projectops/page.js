@@ -21,6 +21,28 @@ export default function ProjectMG() {
   const [TABLE_ROWS_CR, setTableRowsCR] = useState([]);
   const [selectedButton, setSelectedButton] = useState("Pending");
 
+  const sendMessageToQueue = async (message, queue) => {
+    //console.log("Message:", message, "Queue:", queue);
+    try {
+      const res = await fetch("http://localhost:3000/api/producer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: message, queue: queue }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} - ${res.statusText}`);
+      }
+
+      const result = await res.json();
+      console.log("Message sent to queue:", result.message);
+    } catch (error) {
+      console.log("Failed to send message to queue:", error.message);
+    }
+  };
+
   useEffect(() => {
     const fetchProjectDetails = async () => {
       try {
@@ -56,7 +78,9 @@ export default function ProjectMG() {
         const data = await res.json();
         console.log("API Response for /api/resourcelist:", data);
         // Find the resources matching the projectId
-        const resources = data.filter((resource) => resource.projectid === projectId); // corrected line
+        const resources = data.filter(
+          (resource) => resource.projectid === projectId
+        ); // corrected line
 
         // Map the data to table rows
         const rows = resources.map((element) => ({
@@ -77,7 +101,6 @@ export default function ProjectMG() {
     fetchTableRows();
   }, [projectId]);
 
-
   useEffect(() => {
     const fetchProjectStatus = async () => {
       try {
@@ -95,8 +118,12 @@ export default function ProjectMG() {
         const data = await res.json();
         console.log("API Response:", data);
 
-        if (!Array.isArray(data)) { // Check if data is an array directly
-          console.error("Unexpected API response format. Expected an array but received:", data);
+        if (!Array.isArray(data)) {
+          // Check if data is an array directly
+          console.error(
+            "Unexpected API response format. Expected an array but received:",
+            data
+          );
           return;
         }
 
@@ -135,6 +162,46 @@ export default function ProjectMG() {
       return;
     } else if (event === "Approved") {
       toast.success("Request approved");
+
+      sendMessageToQueue(projectId, "create-vm");
+      try {
+        const res = await fetch(`/api/request/?projectid=${projectId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch data: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (data[0].statuspm === event) {
+          try {
+            const res = await fetch(
+              `/api/triggerdag/?dagId=idp&projectId=${projectId}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (!res.ok) {
+              throw new Error(`HTTP error! Status: ${res.status}`);
+            }
+
+            return await res.json(); // Or handle the response as needed
+          } catch (error) {
+            console.error("Error triggering DAG:", error);
+            throw error; // Re-throw to allow the caller to handle the error
+          }
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
     } else {
       toast.error("Request under review", {
         icon: "🟡",
@@ -177,14 +244,15 @@ export default function ProjectMG() {
         <div className="flex flex-row items-center">
           <p className="text-5xl font-bold ml-16 my-5">{projectName}</p>
           <span
-            className={`rounded-2xl px-6 py-1 mt-3 ml-8 ${selectedButton === "Approved"
-              ? "bg-green-500"
-              : selectedButton === "Rejected"
+            className={`rounded-2xl px-6 py-1 mt-3 ml-8 ${
+              selectedButton === "Approved"
+                ? "bg-green-500"
+                : selectedButton === "Rejected"
                 ? "bg-red-500"
                 : selectedButton === "Under Review"
-                  ? "bg-amber-500"
-                  : "bg-gray-500"
-              }`}
+                ? "bg-amber-500"
+                : "bg-gray-500"
+            }`}
           >
             {selectedButton}
           </span>
@@ -228,7 +296,9 @@ export default function ProjectMG() {
           </div>
           <div>
             <p className="text-xl font-medium mx-16 mt-5">Description</p>
-            <p className="text-lg font-normal ml-16 mt-2">{projectDescription}</p>
+            <p className="text-lg font-normal ml-16 mt-2">
+              {projectDescription}
+            </p>
           </div>
           <div>
             <p className="text-xl font-medium mx-16 mt-5">Repository</p>
@@ -274,7 +344,12 @@ export default function ProjectMG() {
                   return (
                     <tr key={id} className={`${rowBgColor} cursor-pointer`}>
                       <td className="p-4 border-b border-blue-gray-50">
-                        <Link href={{ pathname: `/projectops/${id}`, query: { id } }}>
+                        <Link
+                          href={{
+                            pathname: `/projectops/${id}`,
+                            query: { id },
+                          }}
+                        >
                           <Typography
                             variant="small"
                             color="blue-gray"
@@ -285,7 +360,12 @@ export default function ProjectMG() {
                         </Link>
                       </td>
                       <td className="p-4 border-b border-blue-gray-50">
-                        <Link href={{ pathname: `/projectops/${id}`, query: { id } }}>
+                        <Link
+                          href={{
+                            pathname: `/projectops/${id}`,
+                            query: { id },
+                          }}
+                        >
                           <Typography
                             variant="small"
                             color="blue-gray"
