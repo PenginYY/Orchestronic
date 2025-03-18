@@ -92,6 +92,7 @@ export default function Project() {
   const handleDelete = async () => {
     toast.success("Destroy sent successfully");
     try {
+      // Update Project request status
       const requestTypeData = {
         projectid: projectId,
         status: "destroy",
@@ -109,6 +110,42 @@ export default function Project() {
         const errorMessage = await resRequesttype.text();
         throw new Error(
           `RequestType API failed: ${resRequesttype.status} - ${errorMessage}`
+        );
+      }
+
+      const projectData = {
+        projectid: projectId,
+        statuspm: "Pending",
+        statusops: "Pending",
+      };
+
+      const resProject = await fetch("/api/project", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      if (!resProject.ok) {
+        const errorMessage = await resRequesttype.text();
+        throw new Error(
+          `Project API failed: ${resRequesttype.status} - ${errorMessage}`
+        );
+      }
+
+      const resRequest = await fetch("/api/request", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      if (!resRequest.ok) {
+        const errorMessage = await resRequesttype.text();
+        throw new Error(
+          `Project API failed: ${resRequesttype.status} - ${errorMessage}`
         );
       }
 

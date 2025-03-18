@@ -53,7 +53,7 @@ export default function ProjectMG() {
   const sendMessageToQueue = async (message, queue) => {
     //console.log("Message:", message, "Queue:", queue);
     try {
-      const res = await fetch("http://localhost:3000/api/producer", {
+      const res = await fetch("/api/producer", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -193,7 +193,6 @@ export default function ProjectMG() {
       return;
     } else if (event === "Approved") {
       toast.success("Request approved");
-      sendMessageToQueue(projectId, "create-vm");
 
       try {
         const res = await fetch(`/api/request/?projectId=${projectId}`, {
@@ -209,6 +208,7 @@ export default function ProjectMG() {
 
         const data = await res.json();
         if (data[0].statuspm === event) {
+          sendMessageToQueue(projectId, "create-vm");
           try {
             const res = await fetch(
               `/api/triggerdag/?dagId=idp&projectId=${projectId}`,
