@@ -12,7 +12,7 @@ export default function ProjectMG() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectid");
-
+  const [projectType, setProjectType] = useState("");
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [rootPath, setRootPath] = useState("");
@@ -84,6 +84,13 @@ export default function ProjectMG() {
       } else {
         console.log("Project not found");
         // Optionally, handle the case where the project is not found
+      }
+
+      const resType = await fetch(`/api/requesttype?projectId=${projectId}`);
+      const dataType = await resType.json();
+      console.log(dataType);
+      if (dataType) {
+        setProjectType(dataType[0].status);
       }
     } catch (error) {
       console.error("Failed to fetch project details:", error.message);
@@ -191,54 +198,101 @@ export default function ProjectMG() {
       toast.error("Request rejected");
       updateStatus(event);
       return;
-    } else if (event === "Approved") {
+    }
+
+    if (event === "Approved") {
       toast.success("Request approved");
 
-      try {
-        const res = await fetch(`/api/request/?projectId=${projectId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+      if (projectType === "create") {
+        try {
+          const res = await fetch(`/api/request/?projectId=${projectId}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch data: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data[0].statuspm === event) {
-          sendMessageToQueue(projectId, "create-vm");
-          try {
-            const res = await fetch(
-              `/api/triggerdag/?dagId=idp&projectId=${projectId}`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-
-            if (!res.ok) {
-              throw new Error(`HTTP error! Status: ${res.status}`);
-            }
-
-            updateStatus(event);
-            return await res.json();
-          } catch (error) {
-            console.error("Error triggering DAG:", error);
-            throw error;
+          if (!res.ok) {
+            throw new Error(`Failed to fetch data: ${res.status}`);
           }
+
+          const data = await res.json();
+          if (data[0]?.statuspm === event) {
+            sendMessageToQueue(projectId, "create-vm");
+
+            try {
+              const dagRes = await fetch(
+                `/api/triggerdag/?dagId=idp&projectId=${projectId}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                }
+              );
+
+              if (!dagRes.ok) {
+                throw new Error(`HTTP error! Status: ${dagRes.status}`);
+              }
+
+              updateStatus(event);
+              return await dagRes.json();
+            } catch (error) {
+              console.error("Error triggering DAG:", error);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching request:", error);
         }
-      } catch (error) {
-        console.error("Error:", error);
+      } else {
+        try {
+          sendMessageToQueue(projectId, "delete-vm");
+          const dagRes = await fetch(
+            `/api/triggerdag/?dagId=delete_resource_group&projectId=${projectId}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          const deleteProject = await fetch(
+            `/api/project?projectId=${projectId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          const deleteResource = await fetch(
+            `/api/resource?projectRequest=${projectId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          const deleteRequest = await fetch(
+            `/api/request?projectId=${projectId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          if (!dagRes.ok) {
+            throw new Error(`HTTP error! Status: ${dagRes.status}`);
+          }
+
+          if (deleteProject.ok && deleteResource.ok && deleteRequest.ok) {
+            console.log(`Deleted project: ${projectName}`);
+          }
+        } catch (deleteError) {
+          console.error(`Error deleting project ${projectName}:`, deleteError);
+        }
       }
     } else {
-      updateStatus(event);
-      toast.error("Request under review", {
-        icon: "🟡",
-      });
+      toast.error("Request under review", { icon: "🟡" });
     }
   };
 
