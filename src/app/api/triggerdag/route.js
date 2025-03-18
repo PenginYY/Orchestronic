@@ -10,7 +10,7 @@ export async function POST(req, res) {
 
   try {
     const response = await axios.post(
-      `http://localhost:8080/api/v1/dags/${dagId}/dagRuns`,
+      `https://orchestronic-airflow-webserver.salmongrass-fd8429f5.southeastasia.azurecontainerapps.io/api/v1/dags/${dagId}/dagRuns`,
       {
         conf: { projectId }, // Pass projectId as part of DAG configuration
       },

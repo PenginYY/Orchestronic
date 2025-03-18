@@ -30,7 +30,7 @@ def send_vm_notification():
             # Send notification
             project = data[0]
             try:
-                sio.connect("http://host.docker.internal:4000")
+                sio.connect("https://orchestronic-socket-server.salmongrass-fd8429f5.southeastasia.azurecontainerapps.io")
                 if sio.connected:
                     sio.emit('notification', {'projectName': project["projectName"],
                                             'message': 'Virtual machine is being created now',
