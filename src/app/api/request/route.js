@@ -87,3 +87,23 @@ export async function PUT(req) {
     );
   }
 }
+
+export async function DELETE(req) {
+  await connectMongoDB();
+
+  const url = new URL(req.url);
+  const projectid = url.searchParams.get("projectId");
+
+  if (!projectid) {
+    return NextResponse.json(
+      { message: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  await Request.deleteMany({ projectid });
+  return NextResponse.json(
+    { message: "Request type deleted successfully" },
+    { status: 200 }
+  );
+}
